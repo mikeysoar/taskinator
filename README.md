@@ -18,4 +18,4 @@ Built with
 
 ## contributions
 
-Michael Warner :smily:
+Michael Warner :smiley:

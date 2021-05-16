@@ -9,11 +9,3 @@ var createTaskHanlder = function() {
 };
 
 buttonEl.addEventListener("click", createTaskHanlder); 
-
-
-
-
-
-
-
-

@@ -6,6 +6,7 @@ var tasksInProgressEl = document.querySelector("#tasks-in-progress");
 var tasksCompletedEl = document.querySelector("#tasks-completed");
 var pageContentEl = document.querySelector("#page-content");
 
+// create array to hold tasks for saving
 var tasks = [];
 
 var taskFormHandler = function (event) {
@@ -19,8 +20,11 @@ var taskFormHandler = function (event) {
         return false;
     }
 
-    formEl.reset();
+    // reset form fields for next task to be entered
+  document.querySelector("input[name='task-name']").value = "";
+  document.querySelector("select[name='task-type']").selectedIndex = 0;
 
+// check if task is new or one being edited by seeing if it has a data-task id attribute
     var isEdit = formEl.hasAttribute("data-task-id");
 
     // has data attribute, so get task id and call function to complete adit process
@@ -52,15 +56,34 @@ var createTaskEl = function (taskDataObj) {
 
     var taskActionsEl = createTaskActions(taskIdCounter);
     listItemEl.appendChild(taskActionsEl);
-    tasksToDoEl.appendChild(listItemEl);
 
-    taskDataObj.id = taskIdCounter;
-    tasks.push(taskDataObj);
+    switch (taskDataObj.status) {
+        case "to do":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 0;
+            tasksToDoEl.append(listItemEl);
+            break;
+        case "in progress":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 1;
+            tasksInProgressEl.append(listItemEl);
+            break;
+        case "completed":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 2;
+            tasksCompletedEl.append(listItemEl);
+            break;
+            default:
+                console.log("somethingwentwrong!");   
+    }
 
-    //increase task counter for next unique id
-    taskIdCounter++;
+//save task as an object with name, type, status, and id properties then push it inti tasks array
+taskDataObj.id = taskIdCounter;
 
-    saveTasks();
+tasks.push(taskDataObj);
+
+//save tasks to local storage
+saveTasks();
+
+//increase task counter for next unique id
+taskIdCounter++;  
 };
 
 var createTaskActions = function (taskId) {
@@ -72,25 +95,22 @@ var createTaskActions = function (taskId) {
     editButtonEl.textContent = "edit";
     editButtonEl.className = "btn edit-btn";
     editButtonEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(editButtonEl);
-
     //create delete button
     var deleteButtonEl = document.createElement("button");
     deleteButtonEl.textContent = "Delete";
     deleteButtonEl.className = "btn delete-btn";
     deleteButtonEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(deleteButtonEl);
-
+    // create change staus dropdown
     var statusSelectEl = document.createElement("select");
     statusSelectEl.className = "select-status";
     statusSelectEl.setAttribute("name", "status-change");
     statusSelectEl.setAttribute("data-task-id", taskId);
-
     actionContainerEl.appendChild(statusSelectEl);
-
+    // create status options
     var statusChoices = ["To Do", "In Progress", "Completed"];
+
     for (var i = 0; i < statusChoices.length; i++) {
         //create option element
         var statusOptionEl = document.createElement("option");
@@ -120,12 +140,14 @@ var completeEditTask = function (taskName, taskType, taskId) {
         }
     };
 
-    saveTasks();
-
     alert("Task Updated!");
 
+    // remove data attribute from form
     formEl.removeAttribute("data-task-id");
+    // update formEl button to go back to saying "add task" instead of "Edit tasks"
     document.querySelector("#save-task").textContent = "Add Task";
+    // save tasks to local storage
+    saveTasks();
 };
 
 var taskButtonHandler = function (event) {
@@ -134,18 +156,20 @@ var taskButtonHandler = function (event) {
 
     //edit button was clicked
     if (targetEl.matches(".edit-btn")) {
+        console.log("edit", targetEl);
         var taskId = targetEl.getAttribute("data-task-id");
         editTask(taskId);
     }
     //delete button was clicked
     else if (targetEl.matches(".delete-btn")) {
+        console.log("delete", targetEl);
         var taskId = targetEl.getAttribute("data-task-id");
         deleteTask(taskId);
     }
 };
 
 var taskStatusChangeHandler = function (event) {
-
+    console.log(event.target.value);
 
     // get the task item's id
     var taskId = event.target.getAttribute("data-task-id");
@@ -185,13 +209,17 @@ var editTask = function (taskId) {
 
     // get content from task name and type
     var taskName = taskSelected.querySelector("h3.task-name").textContent;
+    console.log(taskName);
 
     var taskType = taskSelected.querySelector("span.task-type").textContent;
+    console.log(taskType);
     document.querySelector("input[name='task-name']").value = taskName;
     document.querySelector("select[name='task-type']").value = taskType;
-    document.querySelector("#save-task").textContent = "Save Task";
 
+    // set data attribute to the form with a value of the task's id so it knows which one is being edited 
     formEl.setAttribute("data-task-id", taskId);
+    //update form's button to reflect ediiting a task rather than creating a new one
+    formEl.querySelector("#save-task").textContent = "Save Task";
 };
 
 var deleteTask = function (taskId) {
@@ -211,7 +239,6 @@ var deleteTask = function (taskId) {
 
     // reassign tasks array to be the same as updatedTaskArr
     task = updatedTaskArr;
-
     saveTasks();
 };
 
@@ -225,6 +252,7 @@ var loadTasks = function () {
     if (!savedTasks) {
         return false;
     }
+    console.log("Saved tasks found!");
 
     savedTasks = JSON.parse(savedTasks);
 
@@ -235,10 +263,14 @@ var loadTasks = function () {
     }
 };
 
-
+// create a new task
 formEl.addEventListener("submit", taskFormHandler);
 
+// for edit and delete buttons
 pageContentEl.addEventListener("click", taskButtonHandler);
 
+// for changing the status
 pageContentEl.addEventListener("change", taskStatusChangeHandler);
+
+loadTasks();
 
